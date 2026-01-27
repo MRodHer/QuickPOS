@@ -15,6 +15,7 @@ import { CashRegisterPage } from './components/cash-register/CashRegisterPage';
 import { SalesHistoryPage } from './components/sales/SalesHistoryPage';
 import { ReportsPage } from './components/reports/ReportsPage';
 import { SettingsPage } from './components/settings/SettingsPage';
+import { CashCutsPage } from './components/cash-register/CashCutsPage';
 
 function AppRoutes() {
   const { isAuthenticated, loading } = useAuth();
@@ -110,6 +111,17 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <CashRegisterPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/cash-cuts"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <CashCutsPage />
             </Layout>
           </ProtectedRoute>
         }

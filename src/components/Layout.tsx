@@ -15,6 +15,7 @@ import {
   BarChart3,
   Settings,
   LogOut,
+  Calendar,
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -28,6 +29,7 @@ const navItems = [
   { path: '/inventory', icon: Warehouse, label: 'Inventario' },
   { path: '/customers', icon: Users, label: 'Clientes' },
   { path: '/cash-register', icon: CreditCard, label: 'Caja' },
+  { path: '/cash-cuts', icon: Calendar, label: 'Cortes' },
   { path: '/sales', icon: Receipt, label: 'Ventas' },
   { path: '/reports', icon: BarChart3, label: 'Reportes' },
   { path: '/settings', icon: Settings, label: 'Configuración' },
