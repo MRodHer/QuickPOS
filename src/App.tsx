@@ -16,6 +16,10 @@ import { SalesHistoryPage } from './components/sales/SalesHistoryPage';
 import { ReportsPage } from './components/reports/ReportsPage';
 import { SettingsPage } from './components/settings/SettingsPage';
 import { CashCutsPage } from './components/cash-register/CashCutsPage';
+import { DiscountsPage } from './components/discounts/DiscountsPage';
+import { AdminLayout } from './components/admin/AdminLayout';
+import { AdminDashboard } from './components/admin/AdminDashboard';
+import { AdminBusinesses } from './components/admin/AdminBusinesses';
 
 function AppRoutes() {
   const { isAuthenticated, loading } = useAuth();
@@ -139,6 +143,17 @@ function AppRoutes() {
       />
 
       <Route
+        path="/discounts"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <DiscountsPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
         path="/reports"
         element={
           <ProtectedRoute>
@@ -156,6 +171,28 @@ function AppRoutes() {
             <Layout>
               <SettingsPage />
             </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Admin Routes */}
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute>
+            <AdminLayout>
+              <AdminDashboard />
+            </AdminLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/businesses"
+        element={
+          <ProtectedRoute>
+            <AdminLayout>
+              <AdminBusinesses />
+            </AdminLayout>
           </ProtectedRoute>
         }
       />

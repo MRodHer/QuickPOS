@@ -3,6 +3,13 @@ import { supabase } from '../../lib/supabase';
 import { useTenant } from '../../contexts/TenantContext';
 import { formatCurrency } from '../../lib/constants';
 import { useExportData } from '../../hooks/useExportData';
+import { usePDFExport } from '../../hooks/usePDFExport';
+import {
+  SalesAreaChart,
+  SalesBarChart,
+  PaymentPieChart,
+  ComparisonLineChart,
+} from '../charts/SalesChart';
 import {
   BarChart3,
   TrendingUp,
@@ -10,9 +17,11 @@ import {
   CreditCard,
   Banknote,
   Download,
+  FileText,
   Calendar,
   ArrowUpRight,
   ArrowDownRight,
+  Package,
 } from 'lucide-react';
 
 interface PeriodData {
@@ -34,6 +43,7 @@ type Period = 'today' | 'week' | 'month' | 'custom';
 export function ReportsPage() {
   const { currentBusiness } = useTenant();
   const { exportCSV, exportExcel, isExporting } = useExportData();
+  const { exportSalesReportPDF } = usePDFExport();
   const [period, setPeriod] = useState<Period>('today');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
@@ -214,7 +224,7 @@ export function ReportsPage() {
     return ((current - previous) / previous) * 100;
   };
 
-  const handleExport = () => {
+  const handleExportExcel = () => {
     const rows = data.dailyBreakdown.map((d) => ({
       date: d.date,
       total: d.total,
@@ -233,6 +243,16 @@ export function ReportsPage() {
     );
   };
 
+  const handleExportPDF = () => {
+    const range = getDateRange(period);
+    exportSalesReportPDF(
+      currentBusiness?.name || 'Mi Negocio',
+      period,
+      { from: range.from, to: range.to },
+      data
+    );
+  };
+
   const salesChange = prevData ? percentChange(data.totalSales, prevData.totalSales) : null;
   const ticketsChange = prevData ? percentChange(data.totalTickets, prevData.totalTickets) : null;
 
@@ -242,14 +262,24 @@ export function ReportsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Reportes</h1>
-        <button
-          onClick={handleExport}
-          disabled={isExporting || data.dailyBreakdown.length === 0}
-          className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition"
-        >
-          <Download className="w-4 h-4" />
-          Exportar
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleExportPDF}
+            disabled={data.dailyBreakdown.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition"
+          >
+            <FileText className="w-4 h-4" />
+            PDF
+          </button>
+          <button
+            onClick={handleExportExcel}
+            disabled={isExporting || data.dailyBreakdown.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition"
+          >
+            <Download className="w-4 h-4" />
+            Excel
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-2 flex-wrap">
@@ -407,28 +437,54 @@ export function ReportsPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Daily Chart */}
+            {/* Sales Trend Chart */}
+            {data.dailyBreakdown.length > 0 && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-4">Tendencia de Ventas</h2>
+                <SalesAreaChart
+                  data={data.dailyBreakdown.map((d) => ({
+                    name: new Date(d.date + 'T12:00:00').toLocaleDateString('es-MX', {
+                      weekday: 'short',
+                      day: 'numeric',
+                    }),
+                    value: d.total,
+                  }))}
+                  height={280}
+                />
+              </div>
+            )}
+
+            {/* Payment Distribution */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h2 className="text-lg font-bold text-gray-900 mb-4">Métodos de Pago</h2>
+              <PaymentPieChart
+                data={[
+                  { name: 'Efectivo', value: data.cashAmount },
+                  { name: 'Tarjeta', value: data.cardAmount },
+                  { name: 'Terminal', value: data.terminalAmount },
+                  { name: 'Transferencia', value: data.transferAmount },
+                ]}
+                height={280}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Daily Breakdown Bar Chart */}
             {data.dailyBreakdown.length > 1 && (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <h2 className="text-lg font-bold text-gray-900 mb-4">Ventas por Día</h2>
-                <div className="space-y-3">
-                  {data.dailyBreakdown.map((day) => (
-                    <div key={day.date} className="flex items-center gap-3">
-                      <span className="text-sm text-gray-600 w-24 shrink-0">
-                        {new Date(day.date + 'T12:00:00').toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' })}
-                      </span>
-                      <div className="flex-1 bg-gray-100 rounded-full h-6 overflow-hidden">
-                        <div
-                          className="bg-blue-500 h-full rounded-full"
-                          style={{ width: `${(day.total / maxDailyTotal) * 100}%` }}
-                        />
-                      </div>
-                      <span className="text-sm font-medium text-gray-900 w-24 text-right">
-                        {formatCurrency(day.total)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                <SalesBarChart
+                  data={data.dailyBreakdown.map((d) => ({
+                    name: new Date(d.date + 'T12:00:00').toLocaleDateString('es-MX', {
+                      weekday: 'short',
+                      day: 'numeric',
+                    }),
+                    value: d.total,
+                  }))}
+                  color="#10B981"
+                  height={280}
+                />
               </div>
             )}
 

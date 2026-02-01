@@ -1,13 +1,13 @@
 import { useCartStore } from '../../stores/cartStore';
 import { formatCurrency } from '../../lib/constants';
-import { Trash2, Plus, Minus, ShoppingCart } from 'lucide-react';
+import { Trash2, Plus, Minus, ShoppingCart, Truck } from 'lucide-react';
 
 interface CartPanelProps {
   onCheckout: () => void;
 }
 
 export function CartPanel({ onCheckout }: CartPanelProps) {
-  const { items, subtotal, taxAmount, total, itemCount, updateQuantity, removeItem, clear } =
+  const { items, subtotal, taxAmount, total, itemCount, updateQuantity, removeItem, clear, shippingAmount, setShipping } =
     useCartStore();
 
   const handleClear = () => {
@@ -108,6 +108,27 @@ export function CartPanel({ onCheckout }: CartPanelProps) {
             <span className="text-gray-600">IVA (16%):</span>
             <span className="font-medium text-gray-900">{formatCurrency(taxAmount())}</span>
           </div>
+
+          {/* Shipping */}
+          <div className="flex items-center justify-between text-sm py-2 border-t border-gray-100">
+            <span className="text-gray-600 flex items-center gap-1">
+              <Truck className="w-4 h-4" />
+              Envío:
+            </span>
+            <div className="flex items-center gap-1">
+              <span className="text-gray-500">$</span>
+              <input
+                type="number"
+                value={shippingAmount || ''}
+                onChange={(e) => setShipping(parseFloat(e.target.value) || 0)}
+                placeholder="0"
+                min="0"
+                step="1"
+                className="w-20 px-2 py-1 border border-gray-300 rounded text-right font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              />
+            </div>
+          </div>
+
           <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
             <span className="text-gray-900">TOTAL:</span>
             <span className="text-gray-900">{formatCurrency(total())}</span>

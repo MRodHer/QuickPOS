@@ -27,7 +27,15 @@ export function CustomersPage() {
   const [formEmail, setFormEmail] = useState('');
   const [formPhone, setFormPhone] = useState('');
   const [formRfc, setFormRfc] = useState('');
-  const [formAddress, setFormAddress] = useState('');
+  const [formStreet, setFormStreet] = useState('');
+  const [formExtNumber, setFormExtNumber] = useState('');
+  const [formIntNumber, setFormIntNumber] = useState('');
+  const [formNeighborhood, setFormNeighborhood] = useState('');
+  const [formCity, setFormCity] = useState('');
+  const [formState, setFormState] = useState('');
+  const [formZipCode, setFormZipCode] = useState('');
+  const [formIsMedical, setFormIsMedical] = useState(false);
+  const [formClinicName, setFormClinicName] = useState('');
   const [formNotes, setFormNotes] = useState('');
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState('');
@@ -78,7 +86,15 @@ export function CustomersPage() {
       setFormEmail(customer.email || '');
       setFormPhone(customer.phone || '');
       setFormRfc(customer.rfc || '');
-      setFormAddress(customer.address || '');
+      setFormStreet(customer.street || '');
+      setFormExtNumber(customer.ext_number || '');
+      setFormIntNumber(customer.int_number || '');
+      setFormNeighborhood(customer.neighborhood || '');
+      setFormCity(customer.city || '');
+      setFormState(customer.state || '');
+      setFormZipCode(customer.zip_code || '');
+      setFormIsMedical(customer.is_medical || false);
+      setFormClinicName(customer.clinic_name || '');
       setFormNotes(customer.notes || '');
     } else {
       setEditingCustomer(null);
@@ -86,7 +102,15 @@ export function CustomersPage() {
       setFormEmail('');
       setFormPhone('');
       setFormRfc('');
-      setFormAddress('');
+      setFormStreet('');
+      setFormExtNumber('');
+      setFormIntNumber('');
+      setFormNeighborhood('');
+      setFormCity('');
+      setFormState('');
+      setFormZipCode('');
+      setFormIsMedical(false);
+      setFormClinicName('');
       setFormNotes('');
     }
     setFormError('');
@@ -111,7 +135,15 @@ export function CustomersPage() {
         email: formEmail.trim() || null,
         phone: formPhone.trim() || null,
         rfc: formRfc.trim() || null,
-        address: formAddress.trim() || null,
+        street: formStreet.trim() || null,
+        ext_number: formExtNumber.trim() || null,
+        int_number: formIntNumber.trim() || null,
+        neighborhood: formNeighborhood.trim() || null,
+        city: formCity.trim() || null,
+        state: formState.trim() || null,
+        zip_code: formZipCode.trim() || null,
+        is_medical: formIsMedical,
+        clinic_name: formClinicName.trim() || null,
         notes: formNotes.trim() || null,
         total_purchases: editingCustomer?.total_purchases || 0,
         visit_count: editingCustomer?.visit_count || 0,
@@ -208,7 +240,19 @@ export function CustomersPage() {
               <tbody>
                 {customers.map((customer) => (
                   <tr key={customer.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-3 px-4 font-medium text-gray-900">{customer.name}</td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900">{customer.name}</span>
+                        {customer.is_medical && (
+                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                            Médico
+                          </span>
+                        )}
+                      </div>
+                      {customer.clinic_name && (
+                        <p className="text-xs text-gray-500">{customer.clinic_name}</p>
+                      )}
+                    </td>
                     <td className="py-3 px-4 text-sm text-gray-600">{customer.phone || '—'}</td>
                     <td className="py-3 px-4 text-sm text-gray-600">{customer.email || '—'}</td>
                     <td className="py-3 px-4 text-sm text-gray-600">{customer.rfc || '—'}</td>
@@ -244,7 +288,7 @@ export function CustomersPage() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200 flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-900">
                 {editingCustomer ? 'Editar Cliente' : 'Nuevo Cliente'}
@@ -290,26 +334,126 @@ export function CustomersPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">RFC</label>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">RFC</label>
+                <input
+                  type="text"
+                  value={formRfc}
+                  onChange={(e) => setFormRfc(e.target.value.toUpperCase())}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  placeholder="RFC del cliente"
+                />
+              </div>
+
+              <div className="border-t border-gray-200 pt-4 mt-2">
+                <div className="flex items-center gap-3 mb-3">
                   <input
-                    type="text"
-                    value={formRfc}
-                    onChange={(e) => setFormRfc(e.target.value.toUpperCase())}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    placeholder="RFC del cliente"
+                    type="checkbox"
+                    id="isMedical"
+                    checked={formIsMedical}
+                    onChange={(e) => setFormIsMedical(e.target.checked)}
+                    className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
                   />
+                  <label htmlFor="isMedical" className="text-sm font-medium text-gray-700">
+                    Es Médico / Veterinario
+                  </label>
+                  {formIsMedical && (
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                      Precio médico aplicará
+                    </span>
+                  )}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
-                  <input
-                    type="text"
-                    value={formAddress}
-                    onChange={(e) => setFormAddress(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    placeholder="Dirección"
-                  />
+
+                {formIsMedical && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nombre de Clínica / Consultorio
+                    </label>
+                    <input
+                      type="text"
+                      value={formClinicName}
+                      onChange={(e) => setFormClinicName(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                      placeholder="Ej: Clínica Veterinaria San Marcos"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-gray-200 pt-4 mt-2">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Dirección</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Calle</label>
+                    <input
+                      type="text"
+                      value={formStreet}
+                      onChange={(e) => setFormStreet(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                      placeholder="Nombre de la calle"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">No. Ext.</label>
+                    <input
+                      type="text"
+                      value={formExtNumber}
+                      onChange={(e) => setFormExtNumber(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                      placeholder="123"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">No. Int.</label>
+                    <input
+                      type="text"
+                      value={formIntNumber}
+                      onChange={(e) => setFormIntNumber(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                      placeholder="A, B..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Colonia</label>
+                    <input
+                      type="text"
+                      value={formNeighborhood}
+                      onChange={(e) => setFormNeighborhood(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                      placeholder="Colonia"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Municipio</label>
+                    <input
+                      type="text"
+                      value={formCity}
+                      onChange={(e) => setFormCity(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                      placeholder="Ciudad"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Estado</label>
+                    <input
+                      type="text"
+                      value={formState}
+                      onChange={(e) => setFormState(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                      placeholder="Estado"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">C.P.</label>
+                    <input
+                      type="text"
+                      value={formZipCode}
+                      onChange={(e) => setFormZipCode(e.target.value)}
+                      maxLength={5}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                      placeholder="12345"
+                    />
+                  </div>
                 </div>
               </div>
 

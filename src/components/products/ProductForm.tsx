@@ -21,11 +21,14 @@ export function ProductForm({ product, onClose, onSaved }: ProductFormProps) {
   const [error, setError] = useState('');
 
   const [name, setName] = useState(product?.name || '');
+  const [brand, setBrand] = useState(product?.brand || '');
   const [sku, setSku] = useState(product?.sku || '');
   const [barcode, setBarcode] = useState(product?.barcode || '');
   const [description, setDescription] = useState(product?.description || '');
   const [categoryId, setCategoryId] = useState(product?.category_id || '');
   const [price, setPrice] = useState(product?.price?.toString() || '');
+  const [priceMedical, setPriceMedical] = useState(product?.price_medical?.toString() || '');
+  const [pricePublic, setPricePublic] = useState(product?.price_public?.toString() || '');
   const [cost, setCost] = useState(product?.cost?.toString() || '0');
   const [taxIncluded, setTaxIncluded] = useState(product?.tax_included ?? true);
   const [taxRate, setTaxRate] = useState(product?.tax_rate?.toString() || (IVA_RATE * 100).toString());
@@ -57,11 +60,14 @@ export function ProductForm({ product, onClose, onSaved }: ProductFormProps) {
       const productData = {
         business_id: currentBusiness.id,
         name: name.trim(),
+        brand: brand.trim() || null,
         sku: sku.trim() || null,
         barcode: barcode.trim() || null,
         description: description.trim() || null,
         category_id: categoryId || null,
         price: parseFloat(price),
+        price_medical: priceMedical ? parseFloat(priceMedical) : null,
+        price_public: pricePublic ? parseFloat(pricePublic) : null,
         cost: parseFloat(cost) || 0,
         tax_included: taxIncluded,
         tax_rate: parseFloat(taxRate) / 100,
@@ -109,7 +115,7 @@ export function ProductForm({ product, onClose, onSaved }: ProductFormProps) {
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
               <input
                 type="text"
@@ -118,6 +124,17 @@ export function ProductForm({ product, onClose, onSaved }: ProductFormProps) {
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 placeholder="Nombre del producto"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Marca</label>
+              <input
+                type="text"
+                value={brand}
+                onChange={(e) => setBrand(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                placeholder="Marca del producto"
               />
             </div>
 
@@ -182,7 +199,7 @@ export function ProductForm({ product, onClose, onSaved }: ProductFormProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Precio de Venta *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Precio Base *</label>
               <input
                 type="number"
                 value={price}
@@ -192,6 +209,32 @@ export function ProductForm({ product, onClose, onSaved }: ProductFormProps) {
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 placeholder="0.00"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Precio Médico</label>
+              <input
+                type="number"
+                value={priceMedical}
+                onChange={(e) => setPriceMedical(e.target.value)}
+                step="0.01"
+                min="0"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                placeholder="Precio especial para profesionales"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Precio Público</label>
+              <input
+                type="number"
+                value={pricePublic}
+                onChange={(e) => setPricePublic(e.target.value)}
+                step="0.01"
+                min="0"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                placeholder="Precio de venta al público"
               />
             </div>
 

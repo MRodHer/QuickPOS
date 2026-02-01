@@ -21,3 +21,132 @@ dist-ssr
 *.sln
 *.sw?
 .env
+.supabase-credentials.md
+# ============================================
+# Secrets and Credentials (CRITICAL)
+api-key-*
+# Skill-specific credentials
+.claude/skills/*/*/*token*
+secret-key-*
+.cursor/
+*_token=*
+# Purpose: Essential patterns for user projects
+*.db
+.turbo/
+# Deployment & CI/CD
+.idea/
+*~
+private-key*
+*.sqlite3
+# OS Files
+secret-*.*
+[Dd]esktop.ini
+# Claude Code Configuration
+*.backup/
+.directory
+# MoAI-ADK Package Distribution .gitignore
+__pycache__/
+*.egg-info/
+*.bak
+.Trashes
+.nuxt/
+.pytest_cache/
+# Mac
+out/
+*.sublime-project
+venv/
+*.sqlite
+.fseventsd
+*.pyc
+*-secret.*
+.env.*
+.claude/skills/*/*/*key*
+# Build Artifacts & Distribution
+# ===========================================
+*-secret-key.*
+.uv_cache/
+.coverage
+.Spotlight-V100
+# Windows
+*_secret.*
+.claude/settings.local.*.json
+dist-ssr/
+# Certificate files
+.#*
+*.backup
+*_key.*
+*.swp
+*-backup/
+# Linux
+.aws/credentials
+# Python Cache & Bytecode
+.aws/config
+*.temp
+.vscode/
+node_modules/
+.claude/.env.local*
+*.key.*
+# Credential patterns in environment files
+# Build Tools & Frameworks
+# Test Coverage
+# Private keys (specific patterns to avoid false positives)
+# Version: 0.33.0
+.claude/local/
+*.pyd
+*.p12
+logs/
+.env/
+# FIXED: Issue #237 - Replaced overly broad *key* and *secret* patterns
+*-api-key.*
+!.env.example
+*.pyo
+.vercel/
+# Updated: 2026-01-10
+.claude/skills/*/.env*
+*.pem
+*.rdb
+.next/
+*.pfx
+.netlify/
+Thumbs.db
+*.jks
+# Backups
+# Cloud provider credentials
+ehthumbs.db
+htmlcov/
+*.tsbuildinfo
+.DocumentRevisions-V100
+*.dbm
+.mypy_cache/
+.VolumeIcon.icns
+# IDE & Editors
+dist/
+.claude/skills/*/secrets/
+.tscache/
+*-key.*
+.firebase/
+.venv/
+env/
+*.sublime-workspace
+.moai-backups/
+# Node.js (for docs/Nextra)
+.LSOverride
+.ruff_cache/
+.uv-cache/
+.claude/skills/*/*/*secret*
+*.secret.*
+.claude/settings.local.json
+# Environment files
+.AppleDouble
+*_secret=*
+# Virtual Environments
+*.egg
+# Logs & Temporary Files
+*_backup_*/
+build/
+*.swo
+coverage.json
+.TemporaryItems
+*.tmp
+.moai/
+.claude/

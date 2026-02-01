@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTenant } from '../contexts/TenantContext';
 import { useAuth } from '../hooks/useAuth';
 import { useCashRegisterStore } from '../stores/cashRegisterStore';
+import { useModule } from '../contexts/ModuleContext';
 import {
   Store,
   LayoutDashboard,
@@ -16,6 +17,7 @@ import {
   Settings,
   LogOut,
   Calendar,
+  Tag,
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -31,6 +33,7 @@ const navItems = [
   { path: '/cash-register', icon: CreditCard, label: 'Caja' },
   { path: '/cash-cuts', icon: Calendar, label: 'Cortes' },
   { path: '/sales', icon: Receipt, label: 'Ventas' },
+  { path: '/discounts', icon: Tag, label: 'Descuentos', module: 'discounts' },
   { path: '/reports', icon: BarChart3, label: 'Reportes' },
   { path: '/settings', icon: Settings, label: 'Configuración' },
 ];
@@ -40,6 +43,7 @@ export function Layout({ children }: LayoutProps) {
   const { currentBusiness, userRole } = useTenant();
   const { user, logout } = useAuth();
   const { isOpen } = useCashRegisterStore();
+  const { isModuleActive } = useModule();
 
   const handleLogout = async () => {
     await logout();
@@ -61,24 +65,26 @@ export function Layout({ children }: LayoutProps) {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-6">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname.startsWith(item.path);
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 px-6 py-3 transition ${
-                  isActive
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-                <span className="font-medium">{item.label}</span>
-              </Link>
-            );
-          })}
+          {navItems
+            .filter((item) => !item.module || isModuleActive(item.module))
+            .map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname.startsWith(item.path);
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center gap-3 px-6 py-3 transition ${
+                    isActive
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="font-medium">{item.label}</span>
+                </Link>
+              );
+            })}
         </nav>
 
         <div className="p-6 border-t border-gray-800">

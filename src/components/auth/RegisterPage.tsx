@@ -1,17 +1,27 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Store } from 'lucide-react';
-import { BUSINESS_TYPES } from '../../lib/constants';
 
 export function RegisterPage() {
+  const [businessTypes, setBusinessTypes] = useState<{value: string; label: string}[]>([]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [businessName, setBusinessName] = useState('');
   const [businessType, setBusinessType] = useState('');
+  const [customBusinessType, setCustomBusinessType] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    supabase
+      .from('business_types')
+      .select('value, label')
+      .order('is_default', { ascending: false })
+      .order('label')
+      .then(({ data }) => setBusinessTypes(data || []));
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -19,6 +29,7 @@ export function RegisterPage() {
     setLoading(true);
 
     try {
+      // 1. Crear usuario
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -30,6 +41,17 @@ export function RegisterPage() {
         throw new Error('No se pudo crear el usuario');
       }
 
+      // 2. Iniciar sesión inmediatamente para establecer el token
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) throw signInError;
+
+      // Pequeña espera para asegurar que el token esté disponible
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       const slug = businessName
         .toLowerCase()
         .normalize('NFD')
@@ -37,12 +59,22 @@ export function RegisterPage() {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '');
 
+      let finalBusinessType = businessType;
+      if (businessType === 'otro' && customBusinessType.trim()) {
+        const customValue = customBusinessType.trim().toLowerCase().replace(/\s+/g, '_');
+        finalBusinessType = customValue;
+        await supabase.from('business_types').upsert({
+          value: customValue,
+          label: customBusinessType.trim(),
+          is_default: false
+        }, { onConflict: 'value' });
+      }
       const { data: businessData, error: businessError } = await supabase
         .from('businesses')
         .insert({
           name: businessName,
           slug: `${slug}-${Date.now()}`,
-          business_type: businessType,
+          business_type: finalBusinessType,
           is_active: true,
           subscription_tier: 'basic',
           modules_enabled: ['pos', 'products', 'customers', 'cash_register', 'reports', 'inventory'],
@@ -124,18 +156,39 @@ export function RegisterPage() {
             <select
               id="businessType"
               value={businessType}
-              onChange={(e) => setBusinessType(e.target.value)}
+              onChange={(e) => {
+                setBusinessType(e.target.value);
+                if (e.target.value !== 'otro') setCustomBusinessType('');
+              }}
               required
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
             >
               <option value="">Selecciona un tipo</option>
-              {BUSINESS_TYPES.map((type) => (
+              {businessTypes.map((type) => (
                 <option key={type.value} value={type.value}>
                   {type.label}
                 </option>
               ))}
+              <option value="otro">Otro...</option>
             </select>
           </div>
+
+          {businessType === 'otro' && (
+            <div>
+              <label htmlFor="customBusinessType" className="block text-sm font-medium text-gray-700 mb-2">
+                Especifica el tipo
+              </label>
+              <input
+                id="customBusinessType"
+                type="text"
+                value={customBusinessType}
+                onChange={(e) => setCustomBusinessType(e.target.value)}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                placeholder="Ej: Farmacia, Veterinaria, Laboratorio..."
+              />
+            </div>
+          )}
 
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">

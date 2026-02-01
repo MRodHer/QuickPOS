@@ -18,12 +18,14 @@ interface CartStore {
   customerId: string | null;
   customerName: string | null;
   globalDiscountPercent: number;
+  shippingAmount: number;
   addItem: (item: Omit<CartItem, 'quantity' | 'discountPercent'>) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   updateDiscount: (productId: string, percent: number) => void;
   setCustomer: (id: string | null, name: string | null) => void;
   setGlobalDiscount: (percent: number) => void;
+  setShipping: (amount: number) => void;
   clear: () => void;
   subtotal: () => number;
   taxAmount: () => number;
@@ -37,6 +39,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
   customerId: null,
   customerName: null,
   globalDiscountPercent: 0,
+  shippingAmount: 0,
 
   addItem: (item) => {
     const items = get().items;
@@ -90,12 +93,17 @@ export const useCartStore = create<CartStore>((set, get) => ({
     set({ globalDiscountPercent: percent });
   },
 
+  setShipping: (amount) => {
+    set({ shippingAmount: amount });
+  },
+
   clear: () => {
     set({
       items: [],
       customerId: null,
       customerName: null,
       globalDiscountPercent: 0,
+      shippingAmount: 0,
     });
   },
 
@@ -159,6 +167,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
     const subtotal = get().subtotal();
     const tax = get().taxAmount();
     const globalDiscount = get().globalDiscountPercent;
+    const shipping = get().shippingAmount;
 
     let total = subtotal + tax;
 
@@ -166,7 +175,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
       total = total * (1 - globalDiscount / 100);
     }
 
-    return total;
+    return total + shipping;
   },
 
   itemCount: () => {

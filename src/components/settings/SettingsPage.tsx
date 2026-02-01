@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useTenant } from '../../contexts/TenantContext';
-import { BUSINESS_TYPES, TERMINAL_PROVIDERS } from '../../lib/constants';
+import { TERMINAL_PROVIDERS } from '../../lib/constants';
 import type { Database } from '../../lib/supabase';
 import {
   Settings,
@@ -14,12 +14,16 @@ import {
   X,
   Trash2,
   Save,
+  Puzzle,
+  Tag,
+  Link2,
+  Check,
 } from 'lucide-react';
 
 type Business = Database['public']['Tables']['businesses']['Row'];
 type TerminalConfig = Database['public']['Tables']['terminal_configs']['Row'];
 
-type Tab = 'business' | 'receipt' | 'tax' | 'terminals' | 'staff';
+type Tab = 'business' | 'receipt' | 'tax' | 'terminals' | 'staff' | 'modules';
 
 export function SettingsPage() {
   const { currentBusiness, refreshBusiness } = useTenant();
@@ -31,6 +35,7 @@ export function SettingsPage() {
     { id: 'tax' as Tab, label: 'Impuestos', icon: Settings },
     { id: 'terminals' as Tab, label: 'Terminales', icon: CreditCard },
     { id: 'staff' as Tab, label: 'Personal', icon: Users },
+    { id: 'modules' as Tab, label: 'Módulos', icon: Puzzle },
   ];
 
   return (
@@ -62,27 +67,62 @@ export function SettingsPage() {
       {activeTab === 'tax' && <TaxSettings />}
       {activeTab === 'terminals' && <TerminalSettings />}
       {activeTab === 'staff' && <StaffSettings />}
+      {activeTab === 'modules' && <ModuleSettings />}
     </div>
   );
 }
 
 function BusinessSettings() {
   const { currentBusiness, refreshBusiness } = useTenant();
+  const [businessTypes, setBusinessTypes] = useState<{value: string; label: string}[]>([]);
   const [name, setName] = useState('');
   const [businessType, setBusinessType] = useState('');
+  const [customBusinessType, setCustomBusinessType] = useState('');
   const [rfc, setRfc] = useState('');
-  const [address, setAddress] = useState('');
+  const [street, setStreet] = useState('');
+  const [extNumber, setExtNumber] = useState('');
+  const [intNumber, setIntNumber] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [zipCode, setZipCode] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    if (currentBusiness) {
+    supabase
+      .from('business_types')
+      .select('value, label')
+      .order('is_default', { ascending: false })
+      .order('label')
+      .then(({ data }) => setBusinessTypes(data || []));
+  }, []);
+
+  useEffect(() => {
+    if (currentBusiness && businessTypes.length > 0) {
       setName(currentBusiness.name);
-      setBusinessType(currentBusiness.business_type || '');
+      const bt = currentBusiness.business_type || '';
+      const isKnownType = businessTypes.some(t => t.value === bt);
+      if (isKnownType) {
+        setBusinessType(bt);
+        setCustomBusinessType('');
+      } else if (bt) {
+        setBusinessType('otro');
+        setCustomBusinessType(bt);
+      } else {
+        setBusinessType('');
+        setCustomBusinessType('');
+      }
       setRfc(currentBusiness.rfc || '');
-      setAddress(currentBusiness.address || '');
+      setStreet(currentBusiness.street || '');
+      setExtNumber(currentBusiness.ext_number || '');
+      setIntNumber(currentBusiness.int_number || '');
+      setNeighborhood(currentBusiness.neighborhood || '');
+      setCity(currentBusiness.city || '');
+      setState(currentBusiness.state || '');
+      setZipCode(currentBusiness.zip_code || '');
       setPhone(currentBusiness.phone || '');
       setEmail(currentBusiness.email || '');
     }
@@ -94,13 +134,30 @@ function BusinessSettings() {
     setLoading(true);
     setSaved(false);
     try {
+      let finalBusinessType = businessType;
+      if (businessType === 'otro' && customBusinessType.trim()) {
+        const customValue = customBusinessType.trim().toLowerCase().replace(/\s+/g, '_');
+        finalBusinessType = customValue;
+        // Insertar en la tabla de tipos si no existe
+        await supabase.from('business_types').upsert({
+          value: customValue,
+          label: customBusinessType.trim(),
+          is_default: false
+        }, { onConflict: 'value' });
+      }
       const { error } = await supabase
         .from('businesses')
         .update({
           name: name.trim(),
-          business_type: businessType || null,
+          business_type: finalBusinessType || null,
           rfc: rfc.trim() || null,
-          address: address.trim() || null,
+          street: street.trim() || null,
+          ext_number: extNumber.trim() || null,
+          int_number: intNumber.trim() || null,
+          neighborhood: neighborhood.trim() || null,
+          city: city.trim() || null,
+          state: state.trim() || null,
+          zip_code: zipCode.trim() || null,
           phone: phone.trim() || null,
           email: email.trim() || null,
         })
@@ -134,15 +191,31 @@ function BusinessSettings() {
           <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Negocio</label>
           <select
             value={businessType}
-            onChange={(e) => setBusinessType(e.target.value)}
+            onChange={(e) => {
+              setBusinessType(e.target.value);
+              if (e.target.value !== 'otro') setCustomBusinessType('');
+            }}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
           >
             <option value="">Seleccionar</option>
-            {BUSINESS_TYPES.map((bt) => (
+            {businessTypes.map((bt) => (
               <option key={bt.value} value={bt.value}>{bt.label}</option>
             ))}
+            <option value="otro">Otro...</option>
           </select>
         </div>
+        {businessType === 'otro' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Especifica el tipo</label>
+            <input
+              type="text"
+              value={customBusinessType}
+              onChange={(e) => setCustomBusinessType(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              placeholder="Ej: Farmacia, Veterinaria, Laboratorio..."
+            />
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">RFC</label>
@@ -172,14 +245,81 @@ function BusinessSettings() {
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
-          <input
-            type="text"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-          />
+        <div className="border-t border-gray-200 pt-4 mt-4">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">Dirección</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Calle</label>
+              <input
+                type="text"
+                value={street}
+                onChange={(e) => setStreet(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                placeholder="Nombre de la calle"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Número Ext.</label>
+              <input
+                type="text"
+                value={extNumber}
+                onChange={(e) => setExtNumber(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                placeholder="123"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Número Int.</label>
+              <input
+                type="text"
+                value={intNumber}
+                onChange={(e) => setIntNumber(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                placeholder="A, B, 1..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Colonia</label>
+              <input
+                type="text"
+                value={neighborhood}
+                onChange={(e) => setNeighborhood(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                placeholder="Colonia"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Municipio/Ciudad</label>
+              <input
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                placeholder="Ciudad"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+              <input
+                type="text"
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                placeholder="Estado"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Código Postal</label>
+              <input
+                type="text"
+                value={zipCode}
+                onChange={(e) => setZipCode(e.target.value)}
+                maxLength={5}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                placeholder="12345"
+              />
+            </div>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -343,11 +483,16 @@ function TerminalSettings() {
   const [terminals, setTerminals] = useState<TerminalConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [editing, setEditing] = useState<TerminalConfig | null>(null);
   const [formName, setFormName] = useState('');
   const [formProvider, setFormProvider] = useState('');
   const [formCommission, setFormCommission] = useState('');
   const [formDeviceId, setFormDeviceId] = useState('');
+  const [formApiKey, setFormApiKey] = useState('');
+  const [formSecretKey, setFormSecretKey] = useState('');
+  const [apiKeyValid, setApiKeyValid] = useState<boolean | null>(null);
+  const [validating, setValidating] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState('');
 
@@ -379,15 +524,51 @@ function TerminalSettings() {
       setFormProvider(terminal.provider);
       setFormCommission(terminal.commission_percent.toString());
       setFormDeviceId(terminal.device_id || '');
+      setFormApiKey(terminal.api_key || terminal.api_key_encrypted || '');
+      setFormSecretKey(terminal.secret_key || '');
     } else {
       setEditing(null);
       setFormName('');
       setFormProvider('');
       setFormCommission('3.6');
       setFormDeviceId('');
+      setFormApiKey('');
+      setFormSecretKey('');
     }
     setFormError('');
+    setApiKeyValid(null);
     setShowForm(true);
+  };
+
+  const validateApiKey = async () => {
+    if (!formApiKey.trim()) return;
+    setValidating(true);
+    setApiKeyValid(null);
+    try {
+      // Por ahora solo validamos formato básico
+      // En producción harías un test call a la API de Clip
+      if (formProvider === 'clip' && formApiKey.length >= 20) {
+        setApiKeyValid(true);
+      } else if (formApiKey.length >= 10) {
+        setApiKeyValid(true);
+      } else {
+        setApiKeyValid(false);
+      }
+    } catch {
+      setApiKeyValid(false);
+    } finally {
+      setValidating(false);
+    }
+  };
+
+  const getProviderHelpUrl = (provider: string) => {
+    const urls: Record<string, string> = {
+      clip: 'https://dashboard.clip.mx/settings/api',
+      mercadopago: 'https://www.mercadopago.com.mx/developers/panel/credentials',
+      stripe: 'https://dashboard.stripe.com/apikeys',
+      square: 'https://developer.squareup.com/apps',
+    };
+    return urls[provider] || '';
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -403,7 +584,8 @@ function TerminalSettings() {
         commission_percent: parseFloat(formCommission),
         device_id: formDeviceId.trim() || null,
         is_active: true,
-        api_key_encrypted: null,
+        api_key: formApiKey.trim() || null,
+        secret_key: formSecretKey.trim() || null,
         settings: {},
       };
 
@@ -543,6 +725,67 @@ function TerminalSettings() {
                   placeholder="Opcional"
                 />
               </div>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700">API Key</label>
+                  {formProvider && getProviderHelpUrl(formProvider) && (
+                    <button
+                      type="button"
+                      onClick={() => setShowHelp(true)}
+                      className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      ¿Dónde la encuentro?
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="password"
+                    value={formApiKey}
+                    onChange={(e) => {
+                      setFormApiKey(e.target.value);
+                      setApiKeyValid(null);
+                    }}
+                    className={`flex-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none ${
+                      apiKeyValid === true ? 'border-green-500 bg-green-50' :
+                      apiKeyValid === false ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                    }`}
+                    placeholder="Pega tu API key aquí"
+                  />
+                  <button
+                    type="button"
+                    onClick={validateApiKey}
+                    disabled={!formApiKey.trim() || validating}
+                    className="px-4 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 disabled:opacity-50 transition"
+                  >
+                    {validating ? '...' : 'Validar'}
+                  </button>
+                </div>
+                {apiKeyValid === true && (
+                  <p className="text-sm text-green-600 mt-1">✓ API Key válida</p>
+                )}
+                {apiKeyValid === false && (
+                  <p className="text-sm text-red-600 mt-1">✗ API Key inválida o muy corta</p>
+                )}
+              </div>
+
+              {/* Secret Key - solo para Clip y otros que lo requieran */}
+              {(formProvider === 'clip' || formProvider === 'stripe') && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Secret Key</label>
+                  <input
+                    type="password"
+                    value={formSecretKey}
+                    onChange={(e) => setFormSecretKey(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    placeholder="Pega tu Secret Key aquí"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formProvider === 'clip' ? 'Lo encuentras en clip.mx → Dashboard → Desarrolladores' : 'Requerido para procesar pagos'}
+                  </p>
+                </div>
+              )}
+
               {formError && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{formError}</div>
               )}
@@ -563,6 +806,99 @@ function TerminalSettings() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showHelp && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">
+                ¿Cómo obtener tu API Key?
+              </h2>
+              <button onClick={() => setShowHelp(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              {formProvider === 'clip' && (
+                <>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 className="font-bold text-blue-900 mb-2">Para Clip:</h3>
+                    <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800">
+                      <li>Inicia sesión en <strong>dashboard.clip.mx</strong></li>
+                      <li>Ve a <strong>Configuración</strong> (ícono de engranaje)</li>
+                      <li>Selecciona <strong>API</strong> en el menú lateral</li>
+                      <li>Copia tu <strong>API Key</strong> (empieza con "sk_")</li>
+                      <li>Pégala en el campo de arriba</li>
+                    </ol>
+                  </div>
+                  <a
+                    href="https://dashboard.clip.mx/settings/api"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full text-center px-6 py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition"
+                  >
+                    Ir a Clip Dashboard →
+                  </a>
+                </>
+              )}
+              {formProvider === 'mercadopago' && (
+                <>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 className="font-bold text-blue-900 mb-2">Para MercadoPago:</h3>
+                    <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800">
+                      <li>Inicia sesión en <strong>mercadopago.com.mx</strong></li>
+                      <li>Ve a <strong>Tu negocio → Configuración</strong></li>
+                      <li>Selecciona <strong>Credenciales</strong></li>
+                      <li>Copia tu <strong>Access Token</strong> de producción</li>
+                      <li>Pégalo en el campo de arriba</li>
+                    </ol>
+                  </div>
+                  <a
+                    href="https://www.mercadopago.com.mx/developers/panel/credentials"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full text-center px-6 py-3 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 transition"
+                  >
+                    Ir a MercadoPago →
+                  </a>
+                </>
+              )}
+              {formProvider === 'stripe' && (
+                <>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 className="font-bold text-blue-900 mb-2">Para Stripe:</h3>
+                    <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800">
+                      <li>Inicia sesión en <strong>dashboard.stripe.com</strong></li>
+                      <li>Ve a <strong>Developers → API keys</strong></li>
+                      <li>Copia tu <strong>Secret key</strong> (empieza con "sk_")</li>
+                      <li>Pégala en el campo de arriba</li>
+                    </ol>
+                  </div>
+                  <a
+                    href="https://dashboard.stripe.com/apikeys"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full text-center px-6 py-3 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-700 transition"
+                  >
+                    Ir a Stripe Dashboard →
+                  </a>
+                </>
+              )}
+              {!['clip', 'mercadopago', 'stripe'].includes(formProvider) && (
+                <p className="text-gray-600">
+                  Consulta la documentación de tu proveedor de pagos para obtener tu API Key.
+                </p>
+              )}
+              <button
+                onClick={() => setShowHelp(false)}
+                className="w-full px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -641,6 +977,168 @@ function StaffSettings() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// Available modules configuration
+const AVAILABLE_MODULES = [
+  // Premium modules
+  {
+    id: 'discounts',
+    name: 'Descuentos y Cupones',
+    description: 'Crea y gestiona códigos de descuento para tus clientes',
+    icon: Tag,
+    tier: 'premium',
+  },
+  {
+    id: 'clip_payments',
+    name: 'Pagos con Clip',
+    description: 'Genera links de pago y recibe pagos con tarjeta vía Clip',
+    icon: Link2,
+    tier: 'premium',
+  },
+  {
+    id: 'advanced_reports',
+    name: 'Reportes Avanzados',
+    description: 'Gráficas detalladas, exportar a Excel, análisis de ventas',
+    icon: Settings,
+    tier: 'premium',
+  },
+  {
+    id: 'multi_location',
+    name: 'Multi-Sucursal',
+    description: 'Gestiona múltiples ubicaciones desde una cuenta',
+    icon: Store,
+    tier: 'premium',
+  },
+  {
+    id: 'staff_permissions',
+    name: 'Roles y Permisos',
+    description: 'Control de acceso avanzado por empleado',
+    icon: Users,
+    tier: 'premium',
+  },
+  {
+    id: 'whatsapp_integration',
+    name: 'WhatsApp Integrado',
+    description: 'Envío automático de tickets y notificaciones por WhatsApp',
+    icon: Receipt,
+    tier: 'premium',
+  },
+  {
+    id: 'invoicing',
+    name: 'Facturación CFDI',
+    description: 'Timbrado de facturas electrónicas ante el SAT',
+    icon: CreditCard,
+    tier: 'premium',
+  },
+  {
+    id: 'ecommerce',
+    name: 'Tienda Online',
+    description: 'Conecta tu POS con una tienda online',
+    icon: Store,
+    tier: 'premium',
+  },
+  {
+    id: 'api_access',
+    name: 'Acceso API',
+    description: 'Integraciones personalizadas vía API REST',
+    icon: Settings,
+    tier: 'premium',
+  },
+];
+
+function ModuleSettings() {
+  const { currentBusiness, refreshBusiness } = useTenant();
+  const [loading, setLoading] = useState(false);
+  const [enabledModules, setEnabledModules] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (currentBusiness) {
+      setEnabledModules(currentBusiness.modules_enabled || []);
+    }
+  }, [currentBusiness]);
+
+  const toggleModule = async (moduleId: string) => {
+    if (!currentBusiness) return;
+    setLoading(true);
+
+    const newModules = enabledModules.includes(moduleId)
+      ? enabledModules.filter(m => m !== moduleId)
+      : [...enabledModules, moduleId];
+
+    try {
+      const { error } = await supabase
+        .from('businesses')
+        .update({ modules_enabled: newModules })
+        .eq('id', currentBusiness.id);
+
+      if (error) throw error;
+
+      setEnabledModules(newModules);
+      await refreshBusiness();
+    } catch (error) {
+      console.error('Error updating modules:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <h2 className="text-lg font-bold text-gray-900 mb-2">Módulos del Sistema</h2>
+      <p className="text-gray-600 text-sm mb-6">
+        Activa o desactiva funcionalidades según las necesidades de tu negocio
+      </p>
+
+      <div className="space-y-4">
+        {AVAILABLE_MODULES.map((module) => {
+          const Icon = module.icon;
+          const isEnabled = enabledModules.includes(module.id);
+
+          return (
+            <div
+              key={module.id}
+              className={`flex items-center justify-between p-4 rounded-lg border-2 transition ${
+                isEnabled
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 bg-gray-50'
+              }`}
+            >
+              <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-lg ${isEnabled ? 'bg-blue-100' : 'bg-gray-200'}`}>
+                  <Icon className={`w-6 h-6 ${isEnabled ? 'text-blue-600' : 'text-gray-500'}`} />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">{module.name}</h3>
+                  <p className="text-sm text-gray-600">{module.description}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => toggleModule(module.id)}
+                disabled={loading}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                  isEnabled ? 'bg-blue-600' : 'bg-gray-300'
+                } ${loading ? 'opacity-50' : ''}`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                    isEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-6 p-4 bg-gray-100 rounded-lg">
+        <p className="text-sm text-gray-600">
+          <strong>Nota:</strong> Los módulos desactivados no aparecerán en el menú lateral.
+          Puedes activarlos o desactivarlos en cualquier momento.
+        </p>
+      </div>
     </div>
   );
 }
