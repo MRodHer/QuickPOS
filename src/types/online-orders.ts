@@ -534,3 +534,17 @@ export interface ApiError {
   code?: string;
   details?: Record<string, unknown>;
 }
+
+// ============================================================================
+// REALTIME TYPES
+// ============================================================================
+
+/**
+ * Supabase realtime channel interface
+ */
+export interface RealtimeChannel {
+  on: (event: string, callback: (payload: any) => void) => RealtimeChannel;
+  subscribe: (callback?: (status: string, error?: Error) => void) => {
+    unsubscribe: () => void;
+  };
+}

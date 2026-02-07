@@ -37,6 +37,16 @@ Object.defineProperty(window, 'localStorage', {
   writable: true,
 });
 
+// Mock global fetch for Telegram API and Stripe
+global.fetch = vi.fn(() =>
+  Promise.resolve({
+    ok: true,
+    json: async () => ({}),
+    status: 200,
+    text: async () => '',
+  } as Response)
+);
+
 // Mock Supabase
 vi.mock('@/lib/supabase', () => ({
   supabase: {

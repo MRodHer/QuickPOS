@@ -31,6 +31,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      'twilio': path.resolve(__dirname, './src/__mocks__/twilio.ts'),
+      'stripe': path.resolve(__dirname, './src/__mocks__/stripe.ts'),
     },
   },
 });
